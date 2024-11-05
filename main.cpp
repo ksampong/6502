@@ -377,10 +377,10 @@ struct CPU{
                     A = Y;
                     LDRSetStatus();
                 }break;
-                case INS_ADC_IM{
+                case INS_ADC_IM:{
                     Byte M = FetchByte(Cycles, memory);
 
-                }
+                }break;
                 default:{
                     printf("instruction not handled %d",Ins);
                 }break;
