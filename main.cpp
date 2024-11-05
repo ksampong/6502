@@ -41,13 +41,13 @@ struct CPU{
     Byte X ;//IndexRegistor
     Byte Y; //IndexRegistor
 
-    Byte C:1;
-    Byte Z:1;
-    Byte I:1;
-    Byte D:1;
-    Byte B:1;
-    Byte V:1;
-    Byte N:1;
+    Byte C:1;//carry flag
+    Byte Z:1;//zero flag
+    Byte I:1;//interrupt flag
+    Byte D:1;//decimal mode flag
+    Byte B:1;//break flag
+    Byte V:1;//overflow flag
+    Byte N:1;//negative flag
 
     void Reset(Memory& memory){
         PC = 0xFFFC;
@@ -84,6 +84,7 @@ struct CPU{
     }
     //OPCODES
     static constexpr Byte
+    //LOAD operations
     INS_LDA_IM = 0xA9,
     INS_LDA_ZP = 0xA5,
     INS_LDA_ZPX = 0xB5,
@@ -92,6 +93,7 @@ struct CPU{
     INS_LDA_ABY =0xB9,
     INS_LDA_INX = 0xA1,
     INS_LDX_IM = 0xA2,
+    // single jump operation
     INS_JSR_AB = 0x20,
     INS_LDX_ZP = 0xA6,
     INS_LDX_ZPY = 0xB6,
@@ -101,7 +103,55 @@ struct CPU{
     INS_LDY_ZP = 0xA4,
     INS_LDY_ZPX = 0xB4,
     INS_LDY_AB = 0xAC,
-    INS_LDY_ABX = 0xBC;
+    INS_LDY_ABX = 0xBC,
+    //store operations
+    INS_STA_ZP = 0x85,
+    INS_STA_ZPX = 0x95,
+    INS_STA_AB = 0x8D,
+    INS_STA_ABX = 0x9D,
+    INS_STA_ABY = 0x99,
+    INS_STA_INX = 0x81,
+    INS_STA_INY = 0x91,
+    INS_STX_ZP = 0x86,
+    INS_STX_ZPY = 0x96,
+    INS_STX_AB = 0x8E,
+    INS_STY_ZP = 0x84,
+    INS_STY_ZPX = 0x94,
+    INS_STY_AB = 0x8C,
+    // register transfer ops
+    INS_TAX = 0xAA,
+    INS_TAY = 0xA8,
+    INS_TYA = 0x98,
+    INS_TXA = 0x8A,
+    //stack ops
+    INS_TSX = 0xBA,
+    INS_TXS = 0x9A,
+    //logical operations
+    INS_AND_IM = 0x29,
+    INS_AND_ZP = 0x25,
+    INS_AND_ZPX = 0x35,
+    INS_AND_AB = 0x2D,
+    INS_AND_ABX = 0x3D,
+    INS_AND_ABY = 0x39,
+    INS_AND_INX = 0x21,
+    INS_AND_INY = 0x31,
+    INS_EOR_IM = 0x49,
+    INS_EOR_ZP = 0x45,
+    INS_EOR_ZPX = 0x55,
+    INS_EOR_AB = 0x4D,
+    INS_EOR_ABX = 0x5D,
+    INS_EOR_ABY = 0x59,
+    //Arithmetic operations
+    INS_ADC_IM = 0x69,
+    INS_ADC_ZP = 0x65,
+    INS_ADC_ZPX = 0x75,
+    INS_ADC_AB = 0x6D,
+    INS_ADC_ABX = 0x7D,
+    INS_ADC_ABY = 0x79,
+    INS_ADC_INX = 0x61,
+    INS_ADC_INY = 0x71,
+    INS_SBC_IM = 0xE9;
+
     ;
 
 
@@ -233,6 +283,104 @@ struct CPU{
                     Y = ZeroPageadress(Cycles, memory);
                     LDRSetStatus();
                 }break;
+                case INS_LDY_AB:{
+                    Y = Absolute(Cycles, memory);
+                    LDRSetStatus();
+                }break;
+                case INS_LDY_ABX:{
+                    Y = AbsoluteX(Cycles, memory);
+                    LDRSetStatus();
+                }break;
+                case INS_STA_ZP:{
+                    Byte ZeroPageAddress = FetchByte(Cycles, memory);
+                    memory[ZeroPageAddress] = A;
+                    Cycles--;
+                }break;
+                case INS_STA_ZPX:{
+                    Byte ZeroPageAddress = FetchByte(Cycles, memory);
+                    memory[ZeroPageAddress + X] = A;
+                    Cycles--;
+                }break;
+                case INS_STA_AB:{
+                    Word AbValue = FetchWord(Cycles, memory);
+                    memory[AbValue] = A;
+                    Cycles-=2;
+                }break;
+                case INS_STA_ABX:{
+                    Word AbValue = FetchWord(Cycles, memory);
+                    memory[AbValue + X] = A;
+                    Cycles-=2;
+                }break;
+                case INS_STA_ABY:{
+                    Word AbValue = FetchWord(Cycles, memory);
+                    memory[AbValue + Y] = A;
+                    Cycles-=2;
+                }break;
+                case INS_STA_INX:{
+                    Word SubAddress = Indirect(Cycles, memory);
+                    memory[SubAddress + X] = A;
+                }break;
+                case INS_STA_INY:{
+                    Word SubAddress = Indirect(Cycles, memory);
+                    memory[SubAddress + Y] = A;
+                }break;
+                case INS_STX_ZP:{
+                    Byte ZeroPageAddress = FetchByte(Cycles, memory);
+                    memory[ZeroPageAddress] = X;
+                    Cycles--;
+                }break;
+                case INS_STX_ZPY:{
+                    Byte ZeroPageAddress = FetchByte(Cycles, memory);
+                    memory[ZeroPageAddress + Y] = X;
+                    Cycles--;
+                }break;
+                case INS_STX_AB:{
+                    Word AbValue = FetchWord(Cycles, memory);
+                    memory[AbValue] = X;
+                    Cycles-=2;
+                }break;
+                case INS_STY_ZP:{
+                    Byte ZeroPageAddress = FetchByte(Cycles, memory);
+                    memory[ZeroPageAddress] = Y;
+                    Cycles--;
+                }break;
+                case INS_STY_ZPX:{
+                    Byte ZeroPageAddress = FetchByte(Cycles, memory);
+                    memory[ZeroPageAddress + X] = Y;
+                    Cycles--;
+                }break;
+                case INS_STY_AB:{
+                    Word AbValue = FetchWord(Cycles, memory);
+                    memory[AbValue] = Y;
+                    Cycles-=2;
+                }break;
+                case INS_TAX:{
+                    X = A;
+                    LDRSetStatus();
+                }break;
+                case INS_TAY:{
+                    Y = A;
+                    LDRSetStatus();
+                }break;
+                case INS_TSX:{
+                    X = SP;
+                    LDRSetStatus();
+                }break;
+                case INS_TXA:{
+                    A = X;
+                    LDRSetStatus();
+                }break;
+                case INS_TXS:{
+                    SP = X;
+                }break;
+                case INS_TYA:{
+                    A = Y;
+                    LDRSetStatus();
+                }break;
+                case INS_ADC_IM{
+                    Byte M = FetchByte(Cycles, memory);
+
+                }
                 default:{
                     printf("instruction not handled %d",Ins);
                 }break;
