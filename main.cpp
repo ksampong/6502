@@ -55,6 +55,7 @@ struct CPU{
         C= Z = I= D = B = V =N  = 0;
         A= X =Y =0;
         memory.Initialise();
+        //stack is from 0x0100 to 0x01FFl
 
     }
     Byte FetchByte( u32& Cycles, Memory& memory){
@@ -93,8 +94,6 @@ struct CPU{
     INS_LDA_ABY =0xB9,
     INS_LDA_INX = 0xA1,
     INS_LDX_IM = 0xA2,
-    // single jump operation
-    INS_JSR_AB = 0x20,
     INS_LDX_ZP = 0xA6,
     INS_LDX_ZPY = 0xB6,
     INS_LDX_AB = 0xAE,
@@ -104,6 +103,8 @@ struct CPU{
     INS_LDY_ZPX = 0xB4,
     INS_LDY_AB = 0xAC,
     INS_LDY_ABX = 0xBC,
+    // single jump operation
+    INS_JSR_AB = 0x20,
     //store operations
     INS_STA_ZP = 0x85,
     INS_STA_ZPX = 0x95,
@@ -150,14 +151,115 @@ struct CPU{
     INS_ADC_ABY = 0x79,
     INS_ADC_INX = 0x61,
     INS_ADC_INY = 0x71,
-    INS_SBC_IM = 0xE9;
+    INS_SBC_IM = 0xE9,
+    INS_SBC_ZP = 0xE5,
+    INS_SBC_ZPX = 0xF5,
+    INS_SBC_AB = 0xED,
+    INS_SBC_ABX = 0xFD,
+    INS_SBC_ABY = 0xF9,
+    INS_SBC_INX = 0xE1,
+    INS_SBC_INY = 0xF1,
+    //Increment and Decrement operations
+    INS_INC_ZP = 0xE6,
+    INS_INC_ZPX = 0xF6,
+    INS_INC_AB = 0xEE,
+    INS_INC_ABX = 0xFE,
+    INS_INX = 0xE8,
+    INS_INY = 0xC8,
+    INS_DEC_ZP = 0xC6,
+    INS_DEC_ZPX = 0xD6,
+    INS_DEC_AB = 0xCE,
+    INS_DEC_ABX = 0xDE,
+    INS_DEX = 0xCA,
+    INS_DEY = 0x88,
+    //Shift operations
+    INS_ASL_IM = 0x0A,
+    INS_ASL_ZP = 0x06,
+    INS_ASL_ZPX = 0x16,
+    INS_ASL_AB = 0x0E,
+    INS_ASL_ABX = 0x1E,
+    INS_LSR_IM = 0x4A,
+    INS_LSR_ZP = 0x46,
+    INS_LSR_ZPX = 0x56,
+    INS_LSR_AB = 0x4E,
+    INS_LSR_ABX = 0x5E,
+    INS_ROL_IM = 0x2A,
+    INS_ROL_ZP = 0x26,
+    INS_ROL_ZPX = 0x36,
+    INS_ROL_AB = 0x2E,
+    INS_ROL_ABX = 0x3E,
+    INS_ROR_IM = 0x6A,
+    INS_ROR_ZP = 0x66,
+    INS_ROR_ZPX = 0x76,
+    INS_ROR_AB = 0x6E,
+    INS_ROR_ABX = 0x7E,
+    //compare operations
+    INS_CMP_IM = 0xC9,
+    INS_CMP_ZP = 0xC5,
+    INS_CMP_ZPX = 0xD5,
+    INS_CMP_AB = 0xCD,
+    INS_CMP_ABX = 0xDD,
+    INS_CMP_ABY = 0xD9,
+    INS_CMP_INX = 0xC1,
+    INS_CMP_INY = 0xD1,
+    INS_CPX_IM = 0xE0,
+    INS_CPX_ZP = 0xE4,
+    INS_CPX_AB = 0xEC,
+    INS_CPY_IM = 0xC0,
+    INS_CPY_ZP = 0xC4,
+    INS_CPY_AB = 0xCC,
+    //branch operations
+    INS_BCC = 0x90,
+    INS_BCS = 0xB0,
+    INS_BEQ = 0xF0,
+    INS_BNE = 0xD0,
+    INS_BMI = 0x30,
+    INS_BPL = 0x10,
+    INS_BVC = 0x50,
+    INS_BVS = 0x70,
+    //jump operations
+    INS_JMP_AB = 0x4C,
+    INS_JMP_IN = 0x6C,
+    INS_RTS = 0x60,
+    INS_RTI = 0x40,
+    //status flag operations
+    INS_CLC = 0x18,
+    INS_CLD = 0xD8,
+    INS_CLI = 0x58,
+    INS_CLV = 0xB8,
+    INS_SEC = 0x38,
+    INS_SED = 0xF8,
+    INS_SEI = 0x78,
+    //system operations
+    INS_BRK = 0x00,
+    INS_NOP = 0xEA,
+    INS_RTI = 0x40;
 
-    ;
-
-
+    //status flag operations
     void LDRSetStatus(){
         Z = (A==0);
         N = (A & 0b10000000) > 0;
+    }
+    void CMPSetStatus(Byte M, Byte A){
+        Z = (A - M) == 0;
+        C = A >= M;
+        N = (A - M) < 0;
+    }
+    void TRSetStatus(Byte M){
+        Z = (M == 0);
+        N = (M & 0b10000000) > 0;
+    }
+    void ADCSetStatus(Byte M){
+        Z = (A + M) == 0;
+        C = A + M > 255;
+        N = (A + M) & 0b10000000;
+        V = (A + M) > 127;
+    }
+    void SBCSetStatus(Byte M){
+        Z = (A - M) == 0;
+        C = A - M > 255;
+        N = (A - M) & 0b10000000;
+        V = (A - M) > 127;
     }
 
     //Adressing modes
@@ -197,6 +299,13 @@ struct CPU{
         return SubAddress;
 
     }
+    Word Relative(u32 Cycles, Memory& memory){
+        Word Offset = FetchByte(Cycles, memory);
+        if(Offset & 0x80){
+            Offset |= 0xFF00;
+        }
+        return Offset;
+    }
 
 
 //INSTRUCTION SET
@@ -208,6 +317,7 @@ struct CPU{
                     Byte Value = FetchByte(Cycles, memory);
                     A = Value;
                     LDRSetStatus();
+                    Cycles=-2;
                 }break;
                 case INS_LDA_ZP:{
                    // FetchByte(Cycles, memory);  //taken out bcos increases req  number of cycles to 4 instaed of 3. doesnt seem to change anything
@@ -319,6 +429,7 @@ struct CPU{
                 case INS_STA_INX:{
                     Word SubAddress = Indirect(Cycles, memory);
                     memory[SubAddress + X] = A;
+
                 }break;
                 case INS_STA_INY:{
                     Word SubAddress = Indirect(Cycles, memory);
@@ -356,31 +467,546 @@ struct CPU{
                 }break;
                 case INS_TAX:{
                     X = A;
-                    LDRSetStatus();
+                    TRSetStatus(X);
                 }break;
                 case INS_TAY:{
                     Y = A;
-                    LDRSetStatus();
+                    TRSetStatus(Y);
                 }break;
                 case INS_TSX:{
                     X = SP;
-                    LDRSetStatus();
+                    TRSetStatus(X);
                 }break;
                 case INS_TXA:{
                     A = X;
-                    LDRSetStatus();
+                    TRSetStatus(A);
                 }break;
                 case INS_TXS:{
                     SP = X;
                 }break;
                 case INS_TYA:{
                     A = Y;
+                    TRSetStatus(A);
+                }break;
+                case INS_AND_IM:{
+                    Byte M = FetchByte(Cycles, memory);
+                    A = A & M;
                     LDRSetStatus();
                 }break;
+                case INS_AND_ZP:{
+                    Byte M = ZeroPageadress(Cycles, memory);
+                    A = A & M;
+                    LDRSetStatus();
+                }break;
+                case INS_AND_ZPX:{
+                    Byte M = ZeroPageadressX(Cycles, memory);
+                    A = A & M;
+                    LDRSetStatus();
+                }break;
+                case INS_AND_AB:{
+                    Byte M = Absolute(Cycles, memory);
+                    A = A & M;
+                    LDRSetStatus();
+                }break;
+                case INS_AND_ABX:{
+                    Byte M = AbsoluteX(Cycles, memory);
+                    A = A & M;
+                    LDRSetStatus();
+                }break;
+                case INS_AND_ABY:{
+                    Byte M = AbsoluteY(Cycles, memory);
+                    A = A & M;
+                    LDRSetStatus();
+                }break;
+                case INS_AND_INX:{
+                    Byte M = Indirect(Cycles, memory);
+                    A = A & M;
+                    LDRSetStatus();
+                }break;
+                case INS_AND_INY:{
+                    Byte M = Indirect(Cycles, memory);
+                    A = A & M;
+                    LDRSetStatus();
+                }break;
+                case INS_EOR_IM:{
+                    Byte M = FetchByte(Cycles, memory);
+                    A = A ^ M;
+                    LDRSetStatus();
+                }break;
+                case INS_EOR_ZP:{
+                    Byte M = ZeroPageadress(Cycles, memory);
+                    A = A ^ M;
+                    LDRSetStatus();
+                }break;
+                case INS_EOR_ZPX:{
+                    Byte M = ZeroPageadressX(Cycles, memory);
+                    A = A ^ M;
+                    LDRSetStatus();
+                }break;
+                case INS_EOR_AB:{
+                    Byte M = Absolute(Cycles, memory);
+                    A = A ^ M;
+                    LDRSetStatus();
+                }break;
+                case INS_EOR_ABX:{
+                    Byte M = AbsoluteX(Cycles, memory);
+                    A = A ^ M;
+                    LDRSetStatus();
+                }break;
+                case INS_EOR_ABY:{
+                    Byte M = AbsoluteY(Cycles, memory);
+                    A = A ^ M;
+                    LDRSetStatus();
+                }break;
+
+                // Arithmetic operations
                 case INS_ADC_IM:{
                     Byte M = FetchByte(Cycles, memory);
-
+                    A = A + M + C;
+                    ADCSetStatus(M);
                 }break;
+                case INS_ADC_ZP:{
+                    Byte M = ZeroPageadress(Cycles, memory);
+                    A = A + M + C;
+                    ADCSetStatus(M);
+                }break;
+                case INS_ADC_ZPX:{
+                    Byte M = ZeroPageadressX(Cycles, memory);
+                    A = A + M + C;
+                    ADCSetStatus(M);
+                }break;
+                case INS_ADC_AB:{
+                    Byte M = Absolute(Cycles, memory);
+                    A = A + M + C;
+                    ADCSetStatus(M);
+                }break;
+                case INS_ADC_ABX:{
+                    Byte M = AbsoluteX(Cycles, memory);
+                    A = A + M + C;
+                    ADCSetStatus(M);
+                }break;
+                case INS_ADC_ABY:{
+                    Byte M = AbsoluteY(Cycles, memory);
+                    A = A + M + C;
+                    ADCSetStatus(M);
+                }break;
+                case INS_ADC_INX:{
+                    Byte M = Indirect(Cycles, memory);
+                    A = A + M + C;
+                    ADCSetStatus(M);
+                }break;
+                case INS_ADC_INY:{
+                    Byte M = Indirect(Cycles, memory);
+                    A = A + M + C;
+                    ADCSetStatus(M);
+                }break;
+                case INS_SBC_IM:{
+                    Byte M = FetchByte(Cycles, memory);
+                    A = A - M - C;
+                    SBCSetStatus(M);
+                }break;
+                case INS_SBC_ZP:{
+                    Byte M = ZeroPageadress(Cycles, memory);
+                    A = A - M - C;
+                    SBCSetStatus(M);
+                }break;
+                case INS_SBC_ZPX:{
+                    Byte M = ZeroPageadressX(Cycles, memory);
+                    A = A - M - C;
+                    SBCSetStatus(M);
+                }break;
+                case INS_SBC_AB:{
+                    Byte M = Absolute(Cycles, memory);
+                    A = A - M - C;
+                    SBCSetStatus(M);
+                }break;
+                case INS_SBC_ABX:{
+                    Byte M = AbsoluteX(Cycles, memory);
+                    A = A - M - C;
+                    SBCSetStatus(M);
+                }break;
+                case INS_SBC_ABY:{
+                    Byte M = AbsoluteY(Cycles, memory);
+                    A = A - M - C;
+                    SBCSetStatus(M);
+                }break;
+                case INS_SBC_INX:{
+                    Byte M = Indirect(Cycles, memory);
+                    A = A - M - C;
+                    SBCSetStatus(M);
+                }break;
+                case INS_SBC_INY:{
+                    Byte M = Indirect(Cycles, memory);
+                    A = A - M - C;
+                    SBCSetStatus(M);
+                }break;
+
+
+                // Increment and Decrement operations
+                case INS_INC_ZP: {
+                    Byte ZeroPageAddress = FetchByte(Cycles, memory);
+                    memory[ZeroPageAddress]++;
+                    Cycles--;
+                } break;
+                case INS_INC_ZPX: {
+                    Byte ZeroPageAddress = FetchByte(Cycles, memory);
+                    memory[ZeroPageAddress + X]++;
+                    Cycles--;
+                } break;
+                case INS_INC_AB: {
+                    Word AbValue = FetchWord(Cycles, memory);
+                    memory[AbValue]++;
+                    Cycles -= 2;
+                } break;
+                case INS_INC_ABX: {
+                    Word AbValue = FetchWord(Cycles, memory);
+                    memory[AbValue + X]++;
+                    Cycles -= 2;
+                } break;
+                case INS_INX: {
+                    X++;
+                    LDRSetStatus();
+                    Cycles--;
+                } break;
+                case INS_INY: {
+                    Y++;
+                    LDRSetStatus();
+                    Cycles--;
+                } break;
+                case INS_DEC_ZP: {
+                    Byte ZeroPageAddress = FetchByte(Cycles, memory);
+                    memory[ZeroPageAddress]--;
+                    Cycles--;
+                } break;
+                case INS_DEC_ZPX: {
+                    Byte ZeroPageAddress = FetchByte(Cycles, memory);
+                    memory[ZeroPageAddress + X]--;
+                    Cycles--;
+                } break;
+                case INS_DEC_AB: {
+                    Word AbValue = FetchWord(Cycles, memory);
+                    memory[AbValue]--;
+                    Cycles -= 2;
+                } break;
+                case INS_DEC_ABX: {
+                    Word AbValue = FetchWord(Cycles, memory);
+                    memory[AbValue + X]--;
+                    Cycles -= 2;
+                } break;
+                case INS_DEX: {
+                    X--;
+                    LDRSetStatus();
+                    Cycles--;
+                } break;
+                case INS_DEY: {
+                    Y--;
+                    LDRSetStatus();
+                    Cycles--;
+                } break;
+
+                    // Shift operations
+                case INS_ASL_IM: {
+                    A = A << 1;
+                    LDRSetStatus();
+                    Cycles--;
+                } break;
+                case INS_ASL_ZP: {
+                    Byte ZeroPageAddress = FetchByte(Cycles, memory);
+                    memory[ZeroPageAddress] = memory[ZeroPageAddress] << 1;
+                    LDRSetStatus();
+                    Cycles--;
+                } break;
+                case INS_ASL_ZPX: {
+                    Byte ZeroPageAddress = FetchByte(Cycles, memory);
+                    memory[ZeroPageAddress + X] = memory[ZeroPageAddress + X] << 1;
+                    LDRSetStatus();
+                    Cycles--;
+                } break;
+                case INS_ASL_AB: {
+                    Word AbValue = FetchWord(Cycles, memory);
+                    memory[AbValue] = memory[AbValue] << 1;
+                    LDRSetStatus();
+                    Cycles -= 2;
+                } break;
+                case INS_ASL_ABX: {
+                    Word AbValue = FetchWord(Cycles, memory);
+                    memory[AbValue + X] = memory[AbValue + X] << 1;
+                    LDRSetStatus();
+                    Cycles -= 2;
+                } break;
+                case INS_LSR_IM: {
+                    A = A >> 1;
+                    LDRSetStatus();
+                    Cycles--;
+                } break;
+                case INS_LSR_ZP: {
+                    Byte ZeroPageAddress = FetchByte(Cycles, memory);
+                    memory[ZeroPageAddress] = memory[ZeroPageAddress] >> 1;
+                    LDRSetStatus();
+                    Cycles--;
+                } break;
+                case INS_LSR_ZPX: {
+                    Byte ZeroPageAddress = FetchByte(Cycles, memory);
+                    memory[ZeroPageAddress + X] = memory[ZeroPageAddress + X] >> 1;
+                    LDRSetStatus();
+                    Cycles--;
+                } break;
+                case INS_LSR_AB: {
+                    Word AbValue = FetchWord(Cycles, memory);
+                    memory[AbValue] = memory[AbValue] >> 1;
+                    LDRSetStatus();
+                    Cycles -= 2;
+                } break;
+                case INS_LSR_ABX: {
+                    Word AbValue = FetchWord(Cycles, memory);
+                    memory[AbValue + X] = memory[AbValue + X] >> 1;
+                    LDRSetStatus();
+                    Cycles -= 2;
+                } break;
+                case INS_ROL_IM: {
+                    A = (A << 1) | (A >> 7);
+                    LDRSetStatus();
+                    Cycles--;
+                } break;
+                case INS_ROL_ZP: {
+                    Byte ZeroPageAddress = FetchByte(Cycles, memory);
+                    memory[ZeroPageAddress] = (memory[ZeroPageAddress] << 1) | (memory[ZeroPageAddress] >> 7);
+                    LDRSetStatus();
+                    Cycles--;
+                } break;
+                case INS_ROL_ZPX: {
+                    Byte ZeroPageAddress = FetchByte(Cycles, memory);
+                    memory[ZeroPageAddress + X] = (memory[ZeroPageAddress + X] << 1) | (memory[ZeroPageAddress + X] >> 7);
+                    LDRSetStatus();
+                    Cycles--;
+                } break;
+                case INS_ROL_AB: {
+                    Word AbValue = FetchWord(Cycles, memory);
+                    memory[AbValue] = (memory[AbValue] << 1) | (memory[AbValue] >> 7);
+                    LDRSetStatus();
+                    Cycles -= 2;
+                } break;
+                case INS_ROL_ABX: {
+                    Word AbValue = FetchWord(Cycles, memory);
+                    memory[AbValue + X] = (memory[AbValue + X] << 1) | (memory[AbValue + X] >> 7);
+                    LDRSetStatus();
+                    Cycles -= 2;
+                } break;
+                case INS_ROR_IM: {
+                    A = (A >> 1) | (A << 7);
+                    LDRSetStatus();
+                    Cycles--;
+                } break;
+                case INS_ROR_ZP: {
+                    Byte ZeroPageAddress = FetchByte(Cycles, memory);
+                    memory[ZeroPageAddress] = (memory[ZeroPageAddress] >> 1) | (memory[ZeroPageAddress] << 7);
+                    LDRSetStatus();
+                    Cycles--;
+                } break;
+                case INS_ROR_ZPX: {
+                    Byte ZeroPageAddress = FetchByte(Cycles, memory);
+                    memory[ZeroPageAddress + X] = (memory[ZeroPageAddress + X] >> 1) | (memory[ZeroPageAddress + X] << 7);
+                    LDRSetStatus();
+                    Cycles--;
+                } break;
+                case INS_ROR_AB: {
+                    Word AbValue = FetchWord(Cycles, memory);
+                    memory[AbValue] = (memory[AbValue] >> 1) | (memory[AbValue] << 7);
+                    LDRSetStatus();
+                    Cycles -= 2;
+                } break;
+                case INS_ROR_ABX: {
+                    Word AbValue = FetchWord(Cycles, memory);
+                    memory[AbValue + X] = (memory[AbValue + X] >> 1) | (memory[AbValue + X] << 7);
+                    LDRSetStatus();
+                    Cycles -= 2;
+                } break;
+
+                // Compare operations
+                case INS_CMP_IM: {
+                    Byte M = FetchByte(Cycles, memory);
+                    CMPSetStatus(M, A);
+                    Cycles--;
+
+                } break;
+                case INS_CMP_ZP: {
+                    Byte M = ZeroPageadress(Cycles, memory);
+                    CMPSetStatus(M, A);
+                    Cycles--;
+
+
+                } break;
+                case INS_CMP_ZPX: {
+                    Byte M = ZeroPageadressX(Cycles, memory);
+                    CMPSetStatus(M, A);
+                    Cycles--;
+                } break;
+                case INS_CMP_AB: {
+                    Byte M = Absolute(Cycles, memory);
+                    CMPSetStatus(M, A);
+                } break;
+                case INS_CMP_ABX: {
+                    Byte M = AbsoluteX(Cycles, memory);
+                    CMPSetStatus(M, A);
+
+                } break;
+                case INS_CMP_ABY: {
+                    Byte M = AbsoluteY(Cycles, memory);
+                    CMPSetStatus(M, A);
+                } break;
+                case INS_CMP_INX: {
+                    Byte M = Indirect(Cycles, memory);
+                    CMPSetStatus(M, A);
+                } break;
+                case INS_CMP_INY: {
+                    Byte M = Indirect(Cycles, memory);
+                    CMPSetStatus(M, A);
+                } break;
+                case INS_CPX_IM: {
+                    Byte M = FetchByte(Cycles, memory);
+                    CMPSetStatus(M, X);
+                    Cycles--;
+                } break;
+                case INS_CPX_ZP: {
+                    Byte M = ZeroPageadress(Cycles, memory);
+                    CMPSetStatus(M, X);
+                    Cycles--;
+                } break;
+                case INS_CPX_AB: {
+                    Byte M = Absolute(Cycles, memory);
+                    CMPSetStatus(M, X);
+                    Cycles -= 2;
+                } break;
+                case INS_CPY_IM: {
+                    Byte M = FetchByte(Cycles, memory);
+                    CMPSetStatus(M, Y);
+                    Cycles--;
+                } break;
+                case INS_CPY_ZP: {
+                    Byte M = ZeroPageadress(Cycles, memory);
+                    CMPSetStatus(M, Y);
+                    Cycles--;
+                } break;
+                case INS_CPY_AB: {
+                    Byte M = Absolute(Cycles, memory);
+                    CMPSetStatus(M, Y);
+                    Cycles -= 2;
+                } break;
+
+                    // Branch operations
+                case INS_BCC: {
+                    Byte Offset = Relative(Cycles, memory);
+                    if (C == 0) {
+                        PC += Offset;
+                        Cycles--;
+                    }
+                } break;
+                case INS_BCS: {
+                    Byte Offset = Relative(Cycles, memory);
+                    if (C == 1) {
+                        PC += Offset;
+                        Cycles--;
+                    }
+                } break;
+                case INS_BEQ: {
+                    Byte Offset = Relative(Cycles, memory);
+                    if (Z == 1) {
+                        PC += Offset;
+                        Cycles--;
+                    }
+                } break;
+                case INS_BNE: {
+                    Byte Offset = Relative(Cycles, memory);
+                    if (Z == 0) {
+                        PC += Offset;
+                        Cycles--;
+                    }
+                } break;
+                case INS_BMI: {
+                    Byte Offset = Relative(Cycles, memory);
+                    if (N == 1) {
+                        PC += Offset;
+                        Cycles--;
+                    }
+                } break;
+                case INS_BPL: {
+                    Byte Offset = Relative(Cycles, memory);
+                    if (N == 0) {
+                        PC += Offset;
+                        Cycles--;
+                    }
+                } break;
+                case INS_BVC: {
+                    Byte Offset = Relative(Cycles, memory);
+                    if (V == 0) {
+                        PC += Offset;
+                        Cycles--;
+                    }
+                } break;
+                case INS_BVS: {
+                    Byte Offset = Relative(Cycles, memory);
+                    if (V == 1) {
+                        PC += Offset;
+                        Cycles--;
+                    }
+                } break;
+
+                    // Jump operations
+                case INS_JMP_AB: {
+                    Word Address = FetchWord(Cycles, memory);
+                    PC = Address;
+                    Cycles -= 2;
+                } break;
+                case INS_JMP_IN: {
+                    Word Address = FetchWord(Cycles, memory);
+                    PC = memory[Address] | (memory[Address + 1] << 8);
+                    Cycles -= 2;
+                } break;
+                case INS_RTS: {
+                    PC = FetchWord(memory, Cycles) + 1;
+                    Cycles -= 2;
+                } break;
+                case INS_RTI: {
+                    // Implement RTI logic here
+                } break;
+
+                    // Status flag operations
+                case INS_CLC: {
+                    C = 0;
+                    Cycles--;
+                } break;
+                case INS_CLD: {
+                    D = 0;
+                    Cycles--;
+                } break;
+                case INS_CLI: {
+                    I = 0;
+                    Cycles--;
+                } break;
+                case INS_CLV: {
+                    V = 0;
+                    Cycles--;
+                } break;
+                case INS_SEC: {
+                    C = 1;
+                    Cycles--;
+                } break;
+                case INS_SED: {
+                    D = 1;
+                    Cycles--;
+                } break;
+                case INS_SEI: {
+                    I = 1;
+                    Cycles--;
+                } break;
+
+                    // System operations
+                case INS_BRK: {
+                    // Implement BRK logic here
+                } break;
+                case INS_NOP: {
+                    Cycles--;
+                } break;
                 default:{
                     printf("instruction not handled %d",Ins);
                 }break;
