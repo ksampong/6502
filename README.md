@@ -19,6 +19,10 @@ The project is currently in the final stages of development. The following compo
 * There may be bugs in the handling of certain instructions or edge cases.
 * The emulator currently lacks a comprehensive test suite to verify correctness.
 
+## Branches
+* Main Branch: All code is contained in a single file.
+* Split Branch: The code has been refactored into a proper file structure suitable for a C++ program.
+
 ## Goals
 The primary goal of this project is to create a fully functional 6502 emulator that can accurately execute 6502 machine code. This includes:
 * Ensuring accurate emulation of all addressing modes.
